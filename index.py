@@ -10,8 +10,8 @@ T_IF = "if"
 T_ENDIF = "endif"
 T_ELSE = "else"
 T_ENDELSE = "endelse"
-T_WHILE = "while"
-T_ENDWHILE = "endwhile"
+T_WHILE = "begin_while"
+T_ENDWHILE = "end_while"
 T_BREAK = "break"
 T_EOF = "eof"
 
@@ -108,12 +108,16 @@ def afd_def(token):
          
 def afd_principal(token, NextToken, lista):
     
+    
     if afd_def(token):
         lista.append(NextToken)
         return Token(T_KEYWORD, token)
     
     elif token in "=+*/-<>":
         return Token(T_OP, token)
+    
+    elif afd_while(token):
+        return Token(T_WHILE if token == 'while' else T_ENDWHILE, token)
     
     elif afd_int(token):
         return Token(T_INT, token)
@@ -129,9 +133,6 @@ def afd_principal(token, NextToken, lista):
     
     elif afd_if(token):
         return Token(T_IF, token)
-    
-    elif afd_while(token):
-        return Token(T_WHILE, token)
     
     elif afd_break(token):
         return Token(T_BREAK, token) 
@@ -361,19 +362,22 @@ for l in arquivo.readlines():
     count = 0
     LineTokens = l.split()
     for token in LineTokens:      
+        if(token == 'endwhile'):
+            print("")
         try:
             if(LineTokens[count + 1] != None):
                 tokens.append(afd_principal(token, LineTokens[count + 1], list_defs))
         except Exception as e:
-            print(tokens)
-            print(str(e) + " na posição %i da linha %i" % (l.index(token), ln))
-            raise StopExecution
+            if(e.args[0] == 'list index out of range' and token == 'endwhile'):
+                tokens.append(afd_principal(token, None, list_defs))
+            else:
+                print(str(e) + " na posição %i da linha %i" % (l.index(token), ln))
+                raise StopExecution
     ln += 1 
 
 print([str(t) for t in tokens])
     
 print("Tokens Defs: {}".format(list_defs))
-
 
 # analisador sintatico
 parser = Parser(tokens)
