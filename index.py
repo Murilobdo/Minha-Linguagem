@@ -1,3 +1,19 @@
+"""
+Cainã Antunes - RA: 160831
+Guilherme Proença Cravo da Costa - RA: 160068
+Jair Rodrigo de Goes Brisola - RA: 160092
+Murilo Bernardes de Oliveira - RA: 160036
+
+Regras de produção EBNF
+Já feito:
+- Uma variável "id" deve ser declada usando "def"
+- Deve ser atribuido um valor "int" ou "id" já declarado ou expressão a cada variável declarada 
+- Resolve equações com letras "id" e números "int" de acordo com a ordem de prioridade dos operadores básicos "+-*/"
+- Resolve primeiro expressões dentro de parênteses e checa se a ordem e quantidade estão corretas
+Falta fazer:
+- Lógica de sintaxe do laço de repetição "while"  e vetor
+"""
+
 import re
 
 T_SYMBOL = "symbol"
@@ -6,13 +22,12 @@ T_OP = "op"
 T_INT = "int"
 T_STRING = "string"
 T_ID = "id"
-T_IF = "if"
-T_ENDIF = "endif"
-T_ELSE = "else"
-T_ENDELSE = "endelse"
+T_IF = "begin_if"
+T_ENDIF = "end_if"
 T_WHILE = "begin_while"
 T_ENDWHILE = "end_while"
 T_BREAK = "break"
+T_VET = "vetor"
 T_EOF = "eof"
 
 class Stack:
@@ -97,12 +112,17 @@ def afd_while(token):
     return False
 
 def afd_break(token):
-    if token == ":":
+    if token in ":,":
         return True
     return False
 
 def afd_def(token):
     if token == "def":
+        return True
+    return False
+
+def afd_vetor(token):
+    if token == "vetor":
         return True
     return False
          
@@ -113,11 +133,14 @@ def afd_principal(token, NextToken, lista):
         lista.append(NextToken)
         return Token(T_KEYWORD, token)
     
-    elif token in "=+*/-<>":
-        return Token(T_OP, token)
-    
     elif afd_while(token):
         return Token(T_WHILE if token == 'while' else T_ENDWHILE, token)
+    
+    elif afd_if(token):
+        return Token(T_IF if token == 'if' else T_ENDIF, token)
+    
+    elif token in "=+*/-<>":
+        return Token(T_OP, token)
     
     elif afd_int(token):
         return Token(T_INT, token)
@@ -131,8 +154,8 @@ def afd_principal(token, NextToken, lista):
     elif afd_simbolo(token):
         return Token(T_SYMBOL, token)
     
-    elif afd_if(token):
-        return Token(T_IF, token)
+    elif afd_vetor(token):
+        return Token(T_VETOR, token) 
     
     elif afd_break(token):
         return Token(T_BREAK, token) 
@@ -214,17 +237,49 @@ class Parser():
             if(token.valor == valorID):
                 token.resultado = resultado
     
+    
+    def structure_vetor(self):
+        
+        # vetor = [ a , b , 2 ]
+        
+        if (self.token_atual.tipo == T_ID):
+            valorID = self.token_atual.valor
+            self.use(T_ID) #id
+            if (self.token_atual.tipo == T_OP and self.token_atual.valor == '='):
+                #self.proximo() Não sei se precisa
+                self.use(T_OP)
+            
+        if (self.token_atual.tipo == T_VETOR and self.token_atual.valor == '['):
+            self.use(T_VETOR)
+            while (self.token_atual.tipo == T_ID or self.token_atual.tipo == T_INT or self.token_atual.valor == ','):
+                if (self.token_atual.tipo == T_ID):
+                    self.use(T_ID)
+                    self.setResultado(valorID, x)
+                elif (self.token_atual.tipo == T_INT):
+                    self.use(T_INT)
+                else: 
+                    self.use(T_BREAK)
+                
+                self.proximo()
+                
+        elif (self.token_atual.tipo == T_VETOR and self.token_atual.valor == ']'): 
+            self.use(T_VETOR)
+        else:
+            self.erro()
+        
+    
     def statement(self):
         """
-        statement ::= <def> <id> <op => | <id> <op =>
+        statement ::= <def> <id> <op => expr | <id> <op => expr
         """
         
         if (self.token_atual.tipo == T_KEYWORD):
             self.use(T_KEYWORD) # def
+
         if (self.token_atual.tipo == T_ID):
             valorID = self.token_atual.valor
             self.use(T_ID) #id
-            if (self.token_atual.tipo == T_OP and self.token_atual.valor in ['=','<','>']):
+            if (self.token_atual.tipo == T_OP and self.token_atual.valor == '='):
                 self.use(T_OP) # = < >
                 x = self.expr() # id ou int
                 self.setResultado(valorID, x)
@@ -233,22 +288,23 @@ class Parser():
             else:
                 self.erro()
                 
-        if(self.token_atual.tipo == T_KEYWORD): 
+        if (self.token_atual.tipo == T_KEYWORD): 
             self.statement()
-        elif(self.token_atual.tipo == T_ID):
+        elif (self.token_atual.tipo == T_ID):
             self.use(T_ID) #id
-            if(self.token_atual.tipo == T_OP):
+            if (self.token_atual.tipo == T_OP and self.token_atual.valor == '='):
                 self.proximo()
                 x = self.expr() # id ou int
                 self.setResultado(valorID, x)
-            if(self.token_atual.tipo != T_EOF):
+            if (self.token_atual.tipo != T_EOF):
                 self.proximo()
+            elif (self.token_atual.tipo == T_EOF):
+                self.use(T_EOF)
         
-            
-        
+              
     def expr(self):
         """
-        expr ::= term ( <op + > | <op - > term ) *
+        expr ::= term ( <op + > | <op - > term )
         """
         
         a = self.term()
@@ -261,13 +317,13 @@ class Parser():
             if op == "+":
                 a += b
             elif op == "-":
-                a -= b     
+                a -= b  
         
         return a
-        
+           
     def term(self):
         """
-        term ::= factor ( <op * > | <op / > factor)*
+        term ::= factor ( <op *> | <op /> factor )*
         """
         
         a = self.factor()
@@ -281,10 +337,12 @@ class Parser():
                 a *= b
             elif op == "/":
                 a /= b
-            
-        return a
-            
         
+        if (self.token_atual.tipo != T_EOF and self.pegar_proximo().valor == '='):
+            self.statement()
+        
+        return a
+               
     def factor(self):
         """
         factor  ::= <id> | <int> | <symbol> | <op>
@@ -305,40 +363,35 @@ class Parser():
         else:
             self.erro()
        
-        return x
-
-    def parenteses(self):
+        return x 
+          
+    def structure_if(self):
         
-        """
-        parenteses  ::= <symbol (> factor
-        """ 
-        
-        while self.token_atual.tipo == T_SYMBOL:
-            self.use(T_SYMBOL)
-            self.factor()         
-        
-    def rif(self):
-        
-        if self.token_atual.tipo == T_WHILE:
-            self.use(T_WHILE)
-            self.statement()
-            self.use(T_BREAK)
-            self.statement()
-            self.use(T_ENDWHILE)
-        else:
-            self.erro()
+        self.use(T_IF)
+        self.statement()
+        self.use(T_BREAK)
+        self.statement()
+        self.use(T_ENDIF)
     
-    def rwhile(self):
+    def structure_while(self):
         
-        if self.token_atual.tipo == T_WHILE:
+        if (self.token_atual.tipo == T_WHILE):
             self.use(T_WHILE)
-            self.statement()
-            self.use(T_BREAK)
-            self.statement()
-            self.use(T_ENDWHILE)
-        else:
-            self.erro()
-    
+            
+            if (self.token_atual.tipo == T_ID):
+                #valorID = self.token_atual.valor
+                self.use(T_ID) #id
+                if (self.token_atual.tipo == T_OP and self.token_atual.valor in ['<','>','==','<=','>=']):
+                    self.use(T_OP) # = < >
+                    x = self.expr() # id ou int
+                    #self.setResultado(valorID, x)
+                elif (self.token_atual.tipo == T_INT):
+                    self.use(T_INT)
+                elif (self.token_atual.tipo == T_BREAK):
+                    self.use(T_BREAK)
+                else:
+                    self.erro()
+                
 
 ##############################################################################
 
@@ -349,6 +402,7 @@ tokens = []
 
 regex = re.compile("[(]")
 list_defs = []
+
 for l in arquivo.readlines():
     
     # verifico a quantidade de abertua e fechamento de parenteses
@@ -375,8 +429,7 @@ for l in arquivo.readlines():
                 raise StopExecution
     ln += 1 
 
-print([str(t) for t in tokens])
-    
+print([str(t) for t in tokens])    
 print("Tokens Defs: {}".format(list_defs))
 
 # analisador sintatico

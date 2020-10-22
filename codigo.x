@@ -1,11 +1,6 @@
 
-def i = 10
-def a = 0
-
-while i > 2 : 
-a = 20 
-i = 1 
-endwhile
+def a = 10
+a = a + 10
 
 
 
