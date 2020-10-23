@@ -122,13 +122,13 @@ def afd_def(token):
     return False
 
 def afd_vetor(token):
-    if token == "vetor":
+    if token in "[]":
         return True
     return False
          
 def afd_principal(token, NextToken, lista):
     
-    
+   
     if afd_def(token):
         lista.append(NextToken)
         return Token(T_KEYWORD, token)
@@ -139,7 +139,7 @@ def afd_principal(token, NextToken, lista):
     elif afd_if(token):
         return Token(T_IF if token == 'if' else T_ENDIF, token)
     
-    elif token in "=+*/-<>":
+    elif  token in ["=", "+", "*", "/", "-", "<", ">", "{}++".format(token.split("+")[0])]:
         return Token(T_OP, token)
     
     elif afd_int(token):
@@ -155,7 +155,7 @@ def afd_principal(token, NextToken, lista):
         return Token(T_SYMBOL, token)
     
     elif afd_vetor(token):
-        return Token(T_VETOR, token) 
+        return Token(T_VET, token) 
     
     elif afd_break(token):
         return Token(T_BREAK, token) 
@@ -237,42 +237,11 @@ class Parser():
             if(token.valor == valorID):
                 token.resultado = resultado
     
-    
-    def structure_vetor(self):
-        
-        # vetor = [ a , b , 2 ]
-        
-        if (self.token_atual.tipo == T_ID):
-            valorID = self.token_atual.valor
-            self.use(T_ID) #id
-            if (self.token_atual.tipo == T_OP and self.token_atual.valor == '='):
-                #self.proximo() Não sei se precisa
-                self.use(T_OP)
-            
-        if (self.token_atual.tipo == T_VETOR and self.token_atual.valor == '['):
-            self.use(T_VETOR)
-            while (self.token_atual.tipo == T_ID or self.token_atual.tipo == T_INT or self.token_atual.valor == ','):
-                if (self.token_atual.tipo == T_ID):
-                    self.use(T_ID)
-                    self.setResultado(valorID, x)
-                elif (self.token_atual.tipo == T_INT):
-                    self.use(T_INT)
-                else: 
-                    self.use(T_BREAK)
-                
-                self.proximo()
-                
-        elif (self.token_atual.tipo == T_VETOR and self.token_atual.valor == ']'): 
-            self.use(T_VETOR)
-        else:
-            self.erro()
-        
-    
     def statement(self):
         """
         statement ::= <def> <id> <op => expr | <id> <op => expr
         """
-        
+
         if (self.token_atual.tipo == T_KEYWORD):
             self.use(T_KEYWORD) # def
 
@@ -280,9 +249,18 @@ class Parser():
             valorID = self.token_atual.valor
             self.use(T_ID) #id
             if (self.token_atual.tipo == T_OP and self.token_atual.valor == '='):
-                self.use(T_OP) # = < >
-                x = self.expr() # id ou int
-                self.setResultado(valorID, x)
+                
+                if(self.pegar_proximo().valor == "["):
+                    self.proximo()
+                    self.structure_vetor(valorID)
+                else:
+                    #caso variavel = 10
+                    self.use(T_OP) # = < >
+                    x = self.expr() # id ou int
+                    self.setResultado(valorID, x)
+                
+                #caso variavel = [ 10 , 20 ]
+                
             elif (self.token_atual.tipo == T_INT):
                 self.use(T_INT)
             else:
@@ -301,7 +279,10 @@ class Parser():
             elif (self.token_atual.tipo == T_EOF):
                 self.use(T_EOF)
         
-              
+        if(self.token_atual.tipo == T_WHILE):
+            self.structure_while()
+                
+        
     def expr(self):
         """
         expr ::= term ( <op + > | <op - > term )
@@ -377,7 +358,6 @@ class Parser():
         
         if (self.token_atual.tipo == T_WHILE):
             self.use(T_WHILE)
-            
             if (self.token_atual.tipo == T_ID):
                 #valorID = self.token_atual.valor
                 self.use(T_ID) #id
@@ -391,7 +371,28 @@ class Parser():
                     self.use(T_BREAK)
                 else:
                     self.erro()
-                
+    
+    def structure_vetor(self, variavel):
+        
+        # vetor = [ 5 , 1 , 2 ]
+
+        #pego a variavel
+        token = [token for token in self.tokens if token.valor == variavel][0]
+        #inicializo o resultado com um vetor vazio
+        token.resultado = []
+        self.proximo()
+        #enquanto não for o ] para cada item
+        while(self.token_atual.valor != ']'):
+            if(self.token_atual.valor != ',' and self.token_atual.tipo != T_INT):
+                self.erro("Caractere inesperado dentro da declaração do vetor")
+            if(self.token_atual.valor == ','): 
+                self.use(T_BREAK)
+                continue
+        #   coloco o item dentro do resultado na variavel
+            token.resultado.append(int(self.token_atual.valor))
+            self.use(T_INT)
+        self.proximo()
+        self.statement()            
 
 ##############################################################################
 
@@ -402,7 +403,6 @@ tokens = []
 
 regex = re.compile("[(]")
 list_defs = []
-
 for l in arquivo.readlines():
     
     # verifico a quantidade de abertua e fechamento de parenteses
@@ -415,12 +415,15 @@ for l in arquivo.readlines():
     l = l.replace('\n','') # remove a quebra de linha
     count = 0
     LineTokens = l.split()
-    for token in LineTokens:      
-        if(token == 'endwhile'):
+    for token in LineTokens: 
+        if(token == 'cont++'):
             print("")
         try:
-            if(LineTokens[count + 1] != None):
+            if(len(LineTokens) == 1):
+                tokens.append(afd_principal(token, None, list_defs))
+            elif(LineTokens[count + 1] != None):
                 tokens.append(afd_principal(token, LineTokens[count + 1], list_defs))
+                
         except Exception as e:
             if(e.args[0] == 'list index out of range' and token == 'endwhile'):
                 tokens.append(afd_principal(token, None, list_defs))
@@ -429,7 +432,8 @@ for l in arquivo.readlines():
                 raise StopExecution
     ln += 1 
 
-print([str(t) for t in tokens])    
+print([str(t) for t in tokens])
+    
 print("Tokens Defs: {}".format(list_defs))
 
 # analisador sintatico
