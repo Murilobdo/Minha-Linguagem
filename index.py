@@ -241,7 +241,6 @@ class Parser():
         """
         statement ::= <def> <id> <op => expr | <id> <op => expr
         """
-
         if (self.token_atual.tipo == T_KEYWORD):
             self.use(T_KEYWORD) # def
 
@@ -281,7 +280,8 @@ class Parser():
         
         if(self.token_atual.tipo == T_WHILE):
             self.structure_while()
-                
+            self.proximo()
+            self.body_while()
         
     def expr(self):
         """
@@ -372,6 +372,28 @@ class Parser():
                 else:
                     self.erro()
     
+    def body_while(self):
+        
+        if(self.token_atual.tipo == T_ID):
+            self.use(T_ID)
+            if(self.token_atual.tipo == T_VET):
+                self.use(T_VET)
+                x = self.expr()
+                if(self.token_atual.tipo == T_VET):
+                    self.proximo()
+                    if(self.token_atual.tipo == T_OP and self.token_atual.valor == '='):
+                        self.use(T_OP)
+                        self.body_while()
+        
+        if(self.token_atual.tipo != T_ENDWHILE and self.token_atual.tipo != T_EOF):
+            self.proximo()
+            self.body_while()
+        elif(self.token_atual.tipo == T_ENDWHILE and self.token_atual.tipo != T_EOF):
+            self.use(T_ENDWHILE)
+            self.statement()
+                
+            
+        
     def structure_vetor(self, variavel):
         
         # vetor = [ 5 , 1 , 2 ]

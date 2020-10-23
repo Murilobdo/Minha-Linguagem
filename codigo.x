@@ -1,4 +1,3 @@
-
 def vetor = [ 10 , 2 , 20 ]
 def vetor_inv = [ ]
 def tam = 3
