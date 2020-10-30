@@ -55,10 +55,11 @@ class Stack:
 
 class Token():
     
-    def __init__(self, tipo, valor=None):
+    def __init__(self, tipo, line,valor=None):
         self.tipo = tipo
         self.valor = valor
         self.resultado = None
+        self.line = line
                 
     def __str__(self):
         return '<%s %s>' % (self.tipo, self.valor)
@@ -97,7 +98,7 @@ def afd_identificador(token):
         return False
     
 def afd_simbolo(token):
-    if token in "()":
+    if token in "()\n":
         return True
     return False
     
@@ -126,39 +127,39 @@ def afd_vetor(token):
         return True
     return False
          
-def afd_principal(token, NextToken, lista):
+def afd_principal(token, NextToken, lista, line):
     
    
     if afd_def(token):
         lista.append(NextToken)
-        return Token(T_KEYWORD, token)
+        return Token(T_KEYWORD, line, token )
     
     elif afd_while(token):
-        return Token(T_WHILE if token == 'while' else T_ENDWHILE, token)
+        return Token(T_WHILE if token == 'while' else T_ENDWHILE, line, token )
     
     elif afd_if(token):
-        return Token(T_IF if token == 'if' else T_ENDIF, token)
+        return Token(T_IF if token == 'if' else T_ENDIF, line, token )
     
     elif  token in ["=", "+", "*", "/", "-", "<", ">", "{}++".format(token.split("+")[0])]:
-        return Token(T_OP, token)
+        return Token(T_OP, line, token )
     
     elif afd_int(token):
-        return Token(T_INT, token)
+        return Token(T_INT, line, token )
     
     elif afd_string(token):
-        return Token(T_STRING, token)
+        return Token(T_STRING, line, token )
     
     elif afd_identificador(token):
-        return Token(T_ID, token)
+        return Token(T_ID, line, token )
     
     elif afd_simbolo(token):
-        return Token(T_SYMBOL, token)
+        return Token(T_SYMBOL, line, token )
     
     elif afd_vetor(token):
-        return Token(T_VET, token) 
+        return Token(T_VET, line, token )
     
     elif afd_break(token):
-        return Token(T_BREAK, token) 
+        return Token(T_BREAK, line, token ) 
     
     else:
         raise ValueError('Valor inesperado na chave [{}]'.format(token))
@@ -194,6 +195,7 @@ def checar_parenteses(line):
 class Parser():
     
     def __init__(self, tokens):
+        self.line = 1
         self.tokens = tokens
         self.pos = -1
         self.token_atual = None
@@ -241,6 +243,11 @@ class Parser():
         """
         statement ::= <def> <id> <op => expr | <id> <op => expr
         """
+        
+        if(self.token_atual.valor == '\n'):
+            self.line = self.line + 1
+            self.proximo()
+        
         if (self.token_atual.tipo == T_KEYWORD):
             self.use(T_KEYWORD) # def
 
@@ -347,7 +354,6 @@ class Parser():
         return x 
           
     def structure_if(self):
-        
         self.use(T_IF)
         self.statement()
         self.use(T_BREAK)
@@ -434,23 +440,24 @@ for l in arquivo.readlines():
     else:
         print("Erro de sintaxe quantidade de parenteses não confere Linha: {}".format(ln))
     
-    l = l.replace('\n','') # remove a quebra de linha
+    #l = l.replace('\n','') # remove a quebra de linha
     count = 0
-    LineTokens = l.split()
-    for token in LineTokens: 
-        if(token == 'cont++'):
-            print("")
+    LineTokens = l.split(' ')
+    for token in LineTokens:
+        if(token == ''):
+            continue 
+        
         try:
             if(len(LineTokens) == 1):
-                tokens.append(afd_principal(token, None, list_defs))
+                tokens.append(afd_principal(token, None, list_defs, ln))
             elif(LineTokens[count + 1] != None):
-                tokens.append(afd_principal(token, LineTokens[count + 1], list_defs))
+                tokens.append(afd_principal(token, LineTokens[count + 1], list_defs, ln))
                 
         except Exception as e:
             if(e.args[0] == 'list index out of range' and token == 'endwhile'):
-                tokens.append(afd_principal(token, None, list_defs))
+                tokens.append(afd_principal(token, None, list_defs, ln))
             else:
-                print(str(e) + " na posição %i da linha %i" % (l.index(token), ln))
+                print(str(e) + " na posicaoo %i da linha %i" % (l.index(token), ln))
                 raise StopExecution
     ln += 1 
 
