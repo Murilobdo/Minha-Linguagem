@@ -195,7 +195,6 @@ def checar_parenteses(line):
 class Parser():
     
     def __init__(self, tokens):
-        self.line = 1
         self.tokens = tokens
         self.pos = -1
         self.token_atual = None
@@ -205,7 +204,7 @@ class Parser():
     def proximo(self):
         self.pos += 1
         if self.pos >= len(self.tokens):
-            self.token_atual = Token(T_EOF)
+            self.token_atual = Token(T_EOF, 0)
         else:    
             self.token_atual = self.tokens[self.pos]
         
@@ -244,9 +243,7 @@ class Parser():
         statement ::= <def> <id> <op => expr | <id> <op => expr
         """
         
-        if(self.token_atual.valor == '\n'):
-            self.line = self.line + 1
-            self.proximo()
+       
         
         if (self.token_atual.tipo == T_KEYWORD):
             self.use(T_KEYWORD) # def
@@ -289,6 +286,9 @@ class Parser():
             self.structure_while()
             self.proximo()
             self.body_while()
+            self.execute_while()
+            
+        
         
     def expr(self):
         """
@@ -378,6 +378,23 @@ class Parser():
                 else:
                     self.erro()
     
+    def execute_while(self):
+        
+        #setar token_atual para o inicio do while
+        self.token_atual = self.find_while()
+        #checar se expressão do while e true
+        if(self.expr_while()):
+            print("OK")
+        else:
+            print("Não OK")
+        #   execute_body_while()
+        #caso expressão true setar token_atual para inicio do while
+    
+    def find_while(self):
+        for token in self.tokens:
+            if(token.tipo == T_WHILE):
+                return token
+                
     def body_while(self):
         
         if(self.token_atual.tipo == T_ID):
@@ -396,10 +413,13 @@ class Parser():
             self.body_while()
         elif(self.token_atual.tipo == T_ENDWHILE and self.token_atual.tipo != T_EOF):
             self.use(T_ENDWHILE)
-            self.statement()
+            self.structure_while()
+            #self.statement()
                 
-            
-        
+    def expr_while(self):
+        flag = False
+                
+       
     def structure_vetor(self, variavel):
         
         # vetor = [ 5 , 1 , 2 ]
@@ -440,9 +460,9 @@ for l in arquivo.readlines():
     else:
         print("Erro de sintaxe quantidade de parenteses não confere Linha: {}".format(ln))
     
-    #l = l.replace('\n','') # remove a quebra de linha
+    l = l.replace('\n','') # remove a quebra de linha
     count = 0
-    LineTokens = l.split(' ')
+    LineTokens = l.split()
     for token in LineTokens:
         if(token == ''):
             continue 
