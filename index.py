@@ -384,15 +384,21 @@ class Parser():
         self.token_atual = self.find_while()
         #checar se expressão do while e true
         if(self.expr_while()):
+            self.execute_body_while()
             print("OK")
         else:
             print("Não OK")
         #   execute_body_while()
         #caso expressão true setar token_atual para inicio do while
-    
+        
+    def execute_body_while(self):
+        
     def find_while(self):
+        count = 0
         for token in self.tokens:
+            count = count + 1
             if(token.tipo == T_WHILE):
+                self.pos = count - 1
                 return token
                 
     def body_while(self):
@@ -417,8 +423,21 @@ class Parser():
             #self.statement()
                 
     def expr_while(self):
-        flag = False
-                
+        #ler a variavel
+        self.use(T_WHILE)
+        variavel = self.token_atual.resultado
+        #ler o operador
+        self.use(T_ID)
+        operador = self.token_atual.valor
+        #ler o valor
+        self.use(T_OP)
+        numero = int(self.token_atual.valor)
+        #aplicar a devida comparação
+        if(operador == '<'):
+            return variavel < numero
+        elif(operador == '>'):
+            return variavel > numero
+
        
     def structure_vetor(self, variavel):
         
