@@ -392,7 +392,7 @@ class Parser():
         #caso expressão true setar token_atual para inicio do while
         
     def execute_body_while(self):
-        
+        print("")
     def find_while(self):
         count = 0
         for token in self.tokens:
@@ -432,6 +432,8 @@ class Parser():
         #ler o valor
         self.use(T_OP)
         numero = int(self.token_atual.valor)
+        self.use(T_INT)
+        self.use(T_BREAK)
         #aplicar a devida comparação
         if(operador == '<'):
             return variavel < numero
