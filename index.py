@@ -286,7 +286,7 @@ class Parser():
             self.structure_while()
             self.proximo()
             self.body_while()
-            self.execute_while()
+            #self.execute_while()
             
         
         
