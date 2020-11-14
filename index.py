@@ -409,19 +409,22 @@ class Parser():
         self.use(T_VET)
         
         incremento = self.token_atual
-        if(self.pegar_proximo().valor  == '++'):
-            
-            for token in self.tokens:
-                if(token.valor == incremento.valor):
-                    self.token_atual.resultado = self.token_atual.resultado + 1
-            self.use(T_ID)
-            self.proximo()
+        val_incremento = self.token_atual.resultado
+       
 
         for token in self.tokens:
             if(token.valor == receptor):
                 vet_emissor = [token for token in self.tokens if token.valor == emissor][0]
                 if(vet_emissor.resultado != None and token.resultado != None):
                     token.resultado.append(vet_emissor.resultado[index_emissor - 1])
+
+
+        if(self.pegar_proximo().valor  == '++'):
+            for token in self.tokens:
+                if(token.valor == incremento.valor):
+                    token.resultado = val_incremento + 1
+            self.use(T_ID)
+            self.proximo()
 
         self.token_atual = self.find_while()
         if(self.expr_while()):
