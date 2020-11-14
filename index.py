@@ -286,7 +286,8 @@ class Parser():
             self.structure_while()
             self.proximo()
             self.body_while()
-            #self.execute_while()
+            self.execute_while()
+            print("")        
             
         
         
@@ -392,7 +393,40 @@ class Parser():
         #caso expressão true setar token_atual para inicio do while
         
     def execute_body_while(self):
-        print("")
+        #valueCont = [token for token in self.tokens if token.valor == 'cont'][0].resultado
+        
+        receptor = self.token_atual.valor
+        
+        self.use(T_ID)
+        self.use(T_VET)
+        index_receptor = self.expr()
+        self.use(T_VET)
+        self.use(T_OP)
+        emissor = self.token_atual.valor
+        self.use(T_ID)
+        self.use(T_VET)
+        index_emissor = self.expr()
+        self.use(T_VET)
+        
+        incremento = self.token_atual
+        if(self.pegar_proximo().valor  == '++'):
+            
+            for token in self.tokens:
+                if(token.valor == incremento.valor):
+                    self.token_atual.resultado = self.token_atual.resultado + 1
+            self.use(T_ID)
+            self.proximo()
+
+        for token in self.tokens:
+            if(token.valor == receptor):
+                vet_emissor = [token for token in self.tokens if token.valor == emissor][0]
+                if(vet_emissor.resultado != None and token.resultado != None):
+                    token.resultado.append(vet_emissor.resultado[index_emissor - 1])
+
+        self.token_atual = self.find_while()
+        if(self.expr_while()):
+            self.execute_body_while()
+        
     def find_while(self):
         count = 0
         for token in self.tokens:
