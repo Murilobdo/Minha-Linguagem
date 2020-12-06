@@ -4,14 +4,22 @@ Guilherme Proença Cravo da Costa - RA: 160068
 Jair Rodrigo de Goes Brisola - RA: 160092
 Murilo Bernardes de Oliveira - RA: 160036
 
-Regras de produção EBNF
-Já feito:
-- Uma variável "id" deve ser declada usando "def"
-- Deve ser atribuido um valor "int" ou "id" já declarado ou expressão a cada variável declarada 
-- Resolve equações com letras "id" e números "int" de acordo com a ordem de prioridade dos operadores básicos "+-*/"
-- Resolve primeiro expressões dentro de parênteses e checa se a ordem e quantidade estão corretas
-Falta fazer:
-- Lógica de sintaxe do laço de repetição "while"  e vetor
+Regras de produção EBNF:
+- Cada token deve ser separado por espaço
+- Uma variável "id" deve ser declarada é usado "def"
+- Deve ser atribuido um valor "int" ou "id" já declarado ou expressão <expr> a cada variável declarada 
+- Resolve equações <expr> com variáveis "id" e números "int" em ordem de prioridade dos operadores básicos "+-*/"
+- Resolve primeiro expressões dentro de parênteses e verifica se a ordem e quantidade estão corretas
+- Variável "id" como vetor se a sequência de tokens for "[", "int" e/ou "id", 
+  para separar cada conteúdo "," se tiver mais de um e termina com "]"
+- Vetor não precisa ser inicializado 
+- Lógica de sintaxe de repetição "while" <condição> "break" <expr> e/ou "vet" "endwhile"
+- Incrementa em 1 variável "id" com "++" na frente  
+"""
+
+"""
+Problema a ser resolvido:
+Inverter um vetor de variáveis "id" e/ou números "int" utilizando o laço de repetição "while"
 """
 
 import re
@@ -243,8 +251,6 @@ class Parser():
         statement ::= <def> <id> <op => expr | <id> <op => expr
         """
         
-       
-        
         if (self.token_atual.tipo == T_KEYWORD):
             self.use(T_KEYWORD) # def
 
@@ -257,12 +263,9 @@ class Parser():
                     self.proximo()
                     self.structure_vetor(valorID)
                 else:
-                    #caso variavel = 10
                     self.use(T_OP) # = < >
                     x = self.expr() # id ou int
                     self.setResultado(valorID, x)
-                
-                #caso variavel = [ 10 , 20 ]
                 
             elif (self.token_atual.tipo == T_INT):
                 self.use(T_INT)
@@ -287,10 +290,12 @@ class Parser():
             self.proximo()
             self.body_while()
             self.execute_while()
-            print("")        
-            
-        
-        
+            vetor =  [token for token in self.tokens if token.valor == 'vetor'][0]
+            vetor_inv =  [token for token in self.tokens if token.valor == 'vetor_inv'][0]
+            print("Vetor = ", vetor.resultado)
+            print("Vetor invertido = ", vetor_inv.resultado)
+                  
+                
     def expr(self):
         """
         expr ::= term ( <op + > | <op - > term )
@@ -418,7 +423,6 @@ class Parser():
                 if(vet_emissor.resultado != None and token.resultado != None):
                     token.resultado.append(vet_emissor.resultado[index_emissor - 1])
 
-
         if(self.pegar_proximo().valor  == '++'):
             for token in self.tokens:
                 if(token.valor == incremento.valor):
@@ -476,8 +480,7 @@ class Parser():
             return variavel < numero
         elif(operador == '>'):
             return variavel > numero
-
-       
+    
     def structure_vetor(self, variavel):
         
         # vetor = [ 5 , 1 , 2 ]
@@ -539,10 +542,12 @@ for l in arquivo.readlines():
                 raise StopExecution
     ln += 1 
 
-print([str(t) for t in tokens])
     
-print("Tokens Defs: {}".format(list_defs))
+# print("Tokens Defs: {}".format(list_defs))
+
+# print([str(t) for t in tokens])
 
 # analisador sintatico
 parser = Parser(tokens)
 parser.statement()
+
